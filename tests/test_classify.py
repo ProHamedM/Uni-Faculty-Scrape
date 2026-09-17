@@ -2,7 +2,14 @@ import unittest
 from datetime import date
 
 from tests.helpers import fixture_text
-from unifaculty.classify import apply_rules, extract_json_object, name_on_page, normalize_for_match, quote_on_page, verify
+from unifaculty.classify import (
+    apply_rules,
+    extract_json_object,
+    name_on_page,
+    normalize_for_match,
+    quote_on_page,
+    verify,
+)
 from unifaculty.config import ResearchProfile
 from unifaculty.extract import parse_html
 from unifaculty.models import LLMDecision

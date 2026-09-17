@@ -81,7 +81,7 @@ def is_git_tracked(root: Path, relative: str) -> bool | None:
     """True/False if git answers, None if git isn't available or this isn't a repository."""
     try:
         result = subprocess.run(["git", "ls-files", "--error-unmatch", relative], cwd=root,
-                                capture_output=True, timeout=15)
+                                capture_output=True, timeout=15, check=False)
     except (OSError, subprocess.SubprocessError):
         return None
     if result.returncode == 0:

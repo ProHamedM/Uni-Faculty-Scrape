@@ -146,7 +146,7 @@ def _visible_text(soup: BeautifulSoup) -> str:
         el.insert_after("\n")
     text = root.get_text(" ")
     text = html_lib.unescape(text)
-    text = re.sub(r"[ \t ​]+", " ", text)
+    text = re.sub(r"[ \t\u00a0\u200b]+", " ", text)   # spaces, tabs, NBSP, zero-width space
     lines, seen = [], set()
     for line in (raw.strip() for raw in text.splitlines()):
         if line and line not in seen:

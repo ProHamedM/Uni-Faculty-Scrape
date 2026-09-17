@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- CI lint step failed on every run: `ruff` picks up more default rules with each release (CI installed 0.16.8 and reported 41 style findings). The rule set is now pinned in `pyproject.toml` (`E4`, `E7`, `E9`, `F`, `I`), so a new ruff release can't fail the build on untouched code.
+- Escaped the literal non-breaking space and zero-width space inside a regex character class in `extract.py`.
+- `TextFormatter.COLORS` is annotated `ClassVar`; `subprocess.run` in `secretscan.py` passes `check=False` explicitly; imports sorted.
+
 ## [0.1.1] — 2026-09-17
 
 ### Security

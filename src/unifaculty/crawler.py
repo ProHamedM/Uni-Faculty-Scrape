@@ -27,7 +27,7 @@ from typing import Iterator
 from unifaculty.compliance import MAX_HONORED_CRAWL_DELAY, DomainGuard, effective_delay
 from unifaculty.config import CrawlSettings, UniversityConfig
 from unifaculty.extract import ParsedPage, parse_html
-from unifaculty.fetcher import FetchResult, Fetcher
+from unifaculty.fetcher import Fetcher, FetchResult
 from unifaculty.logs import TRACE, get_logger, log_event
 from unifaculty.ratelimit import HostRateLimiter
 from unifaculty.robots import RobotsCache

@@ -28,7 +28,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 LOGGER_NAME = "unifaculty"
 TRACE = 5
@@ -142,8 +142,8 @@ class JsonlFormatter(logging.Formatter):
 class TextFormatter(logging.Formatter):
     """``14:05:12.345 INFO  [stanford] fetch.done url=... status=200 elapsed_ms=812``"""
 
-    COLORS = {"TRACE": "\033[90m", "DEBUG": "\033[36m", "INFO": "\033[32m", "WARNING": "\033[33m",
-              "ERROR": "\033[31m", "CRITICAL": "\033[1;31m"}
+    COLORS: ClassVar[dict[str, str]] = {"TRACE": "\033[90m", "DEBUG": "\033[36m", "INFO": "\033[32m",
+                                        "WARNING": "\033[33m", "ERROR": "\033[31m", "CRITICAL": "\033[1;31m"}
     RESET = "\033[0m"
 
     def __init__(self, color: bool = False, field_limit: int = 160, show_span: bool = False):
