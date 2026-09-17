@@ -4,29 +4,19 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:        # adds the "Run workflow" button on the Actions tab
 
 permissions:
   contents: read
 
 jobs:
-  secrets:
-    name: Secret scan (gitleaks)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0          # gitleaks-action needs history to scan each push / pull request's commits
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   test:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # Two jobs instead of six: your own OS, plus Linux on the oldest Python the project supports.
+        # Two jobs: your own OS, plus Linux on the oldest Python the project supports.
         include:
           - os: windows-latest
             python-version: "3.12"
@@ -34,16 +24,23 @@ jobs:
             python-version: "3.10"
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+
       - name: Install
-        run: python -m pip install -e ".[dev]"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
       - name: Lint
         run: ruff check src tests
-      - name: Tests (offline, includes repository secret scan)
+
+      - name: Tests (offline; includes the repository secret scan)
         run: pytest -q
+
       - name: CLI smoke
         run: |
           unifaculty --version
