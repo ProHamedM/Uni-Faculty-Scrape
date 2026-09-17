@@ -1,0 +1,30 @@
+# Your research profile. Copy to config/profile.yaml (git-ignored) and make it yours.
+# The LLM compares every candidate position against this, by meaning — not just keywords.
+
+current_degree: "M.Sc. Artificial Intelligence & Robotics"
+background: "Deep learning model compression (quantization-aware training, knowledge distillation); Python/PyTorch."
+
+target_degree_levels: [phd]          # any of: phd, master, postdoc
+
+target_fields:                       # what you want to research next (1+)
+  - efficient deep learning
+  - model compression
+  - robot learning
+
+keywords:                            # extra terms (English/German) used to rank links and pre-filter pages
+  - quantization
+  - knowledge distillation
+  - edge AI
+  - embedded machine learning
+  - maschinelles Lernen
+  - Robotik
+
+exclude_topics:                      # drop positions centred on these
+  - pure mathematics
+
+department_tags: [cs, ai, robotics]  # crawl only sections with these tags (job portals are always included)
+
+min_field_match: 0.6                 # 0..1, LLM field-fit score needed to keep a row
+min_funding_confidence: 0.6          # 0..1
+accept_partial_funding: true
+accept_unclear_funding: false        # true keeps "funding not stated" positions (more rows, more noise)

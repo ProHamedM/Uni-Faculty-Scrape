@@ -1,0 +1,10 @@
+current_degree: "M.Sc. Artificial Intelligence & Robotics"
+target_degree_levels: [phd]
+target_fields:
+  - efficient deep learning
+  - model compression
+  - robot learning
+keywords:
+  - quantization
+min_field_match: 0.6
+min_funding_confidence: 0.6

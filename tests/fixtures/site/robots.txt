@@ -1,0 +1,7 @@
+# Fictional university robots.txt used by the offline pipeline test
+User-agent: *
+Disallow: /private/
+Disallow: /*?print=
+Crawl-delay: 3
+
+Sitemap: https://www.example-university.edu/sitemap.xml

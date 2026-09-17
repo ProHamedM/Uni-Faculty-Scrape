@@ -1,0 +1,32 @@
+# Copy to config/settings.yaml and adjust. Every key is optional; these are the defaults.
+
+llm:
+  # gemini | openrouter | anthropic | ollama | openai_compat | mock
+  #   gemini      -> GEMINI_API_KEY   (free tier via Google AI Studio; not offered in every country)
+  #   openrouter  -> OPENROUTER_API_KEY ("openrouter/free" routes to a free model; free models have daily caps)
+  #   anthropic   -> ANTHROPIC_API_KEY (paid)
+  #   ollama      -> no key; runs a local model at http://localhost:11434/v1
+  #   mock        -> offline dry run, no real filtering
+  provider: gemini
+  model: null                 # null = provider default (see src/unifaculty/llm/factory.py)
+  base_url: null              # only for ollama / openai_compat / proxies you run yourself
+  temperature: 0.0
+  max_output_tokens: 2048
+  max_page_chars: 12000       # page text sent per call (head + tail if longer)
+  requests_per_minute: 10     # keep under your provider's limit
+  max_calls_per_run: 150      # hard budget per university run
+  timeout_seconds: 90
+  max_retries: 4
+
+crawl:
+  fetcher: curl_cffi          # curl_cffi (browser-grade TLS) | httpx (identifies as UniFacultyScraper)
+  impersonate: chrome         # one consistent profile for the whole run — never rotated
+  timeout_seconds: 25
+  max_bytes: 3000000
+  prefilter: loose            # strict | loose | off  (off = more LLM calls, more cost)
+  min_text_chars: 200
+
+output_dir: output
+runs_dir: runs
+cache_dir: .cache
+universities_dir: config/universities

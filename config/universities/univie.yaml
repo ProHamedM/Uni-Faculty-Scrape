@@ -1,0 +1,38 @@
+slug: univie
+name: University of Vienna (Universität Wien)
+country: AT
+languages: [de, en]
+allowed_domains:
+  - informatik.univie.ac.at
+  - docs.univie.ac.at
+  - jobs.univie.ac.at
+max_pages: 300
+max_depth: 3
+min_delay_seconds: 3
+seeds_verified: "2026-09-17"
+notes: >
+  Faculty of Computer Science. www.univie.ac.at robots.txt (2026-09-17) disallows only
+  /search, /suche and feeds; each subdomain's robots.txt is read at run time.
+  jobs.univie.ac.at renders listings as plain HTML (facility=39 = Faculty of Computer Science);
+  PhD roles are usually "University assistant predoctoral" / "Prae Doc" employment contracts.
+  docs.univie.ac.at is the Doctoral School Computer Science (pooled calls, supervisors, funding).
+
+sections:
+  - name: Faculty of Computer Science — research groups
+    kind: department
+    tags: [cs, ai, robotics]
+    seeds:
+      - https://informatik.univie.ac.at/ueber-uns/subeinheiten
+      - https://informatik.univie.ac.at/forschung/forschungsschwerpunkte
+  - name: Doctoral School Computer Science (DoCS)
+    kind: doctoral_school
+    tags: [cs]
+    seeds:
+      - https://docs.univie.ac.at/how-to-apply/pooled-calls/
+      - https://docs.univie.ac.at/research-and-doctoral-programme/funding/
+      - https://docs.univie.ac.at/people/supervisors/
+  - name: Job portal — Faculty of Computer Science
+    kind: jobs
+    tags: [cs, jobs]
+    seeds:
+      - https://jobs.univie.ac.at/search/?q=&q2=&alertId=&title=&department=&facility=39&date=

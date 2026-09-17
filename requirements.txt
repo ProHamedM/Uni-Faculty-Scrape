@@ -1,0 +1,7 @@
+# Runtime dependencies (same as pyproject.toml). Prefer: pip install -e ".[dev]"
+curl_cffi>=0.10
+beautifulsoup4>=4.12
+lxml>=5.0
+httpx>=0.27
+pydantic>=2.6
+PyYAML>=6.0

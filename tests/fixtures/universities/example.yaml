@@ -1,0 +1,15 @@
+slug: example-university
+name: Example University
+country: XX
+languages: [en]
+allowed_domains:
+  - example-university.edu
+max_pages: 40
+max_depth: 3
+min_delay_seconds: 2
+sections:
+  - name: Computer Science
+    kind: department
+    tags: [cs]
+    seeds:
+      - https://www.example-university.edu/cs/people

@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unifaculty"
+version = "0.1.0"
+description = "Find professors with open, funded PhD/postdoc positions — a polite crawler with an LLM filter, one CSV per university."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Hamed Mohamadi" }]
+keywords = ["phd", "funding", "academia", "scraper", "llm", "research", "graduate-school"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Topic :: Education",
+  "Intended Audience :: Education",
+]
+dependencies = [
+  "curl_cffi>=0.10",
+  "beautifulsoup4>=4.12",
+  "lxml>=5.0",
+  "httpx>=0.27",
+  "pydantic>=2.6",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+unifaculty = "unifaculty.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ProHamedM/Uni-Faculty-Scrape"
+Issues = "https://github.com/ProHamedM/Uni-Faculty-Scrape/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"unifaculty.prompts" = ["*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]

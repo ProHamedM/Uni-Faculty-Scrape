@@ -1,0 +1,31 @@
+slug: goethe-frankfurt
+name: Johann Wolfgang Goethe-Universität Frankfurt am Main
+country: DE
+languages: [de, en]
+allowed_domains:
+  - fb12.uni-frankfurt.de
+  - uni-frankfurt.de
+max_pages: 250
+max_depth: 3
+min_delay_seconds: 5          # fb12.uni-frankfurt.de sets Crawl-delay: 5
+seeds_verified: "2026-09-17"
+notes: >
+  robots.txt findings on 2026-09-17 — the crawler enforces these automatically:
+  * fb12.uni-frankfurt.de: open, Crawl-delay 5 -> used for seeds.
+  * www.uni-frankfurt.de: "Disallow: /0" ... "Disallow: /9" with a short Allow list, so
+    almost every numeric page id (e.g. /65709683/...) is off-limits for crawlers.
+  * informatik.uni-frankfurt.de: robots.txt answered HTTP 500 -> RFC 9309 says treat the
+    host as fully disallowed; it is skipped until that is fixed.
+  German postings use "Wissenschaftliche*r Mitarbeiter*in", "Doktorand*in", "E13 TV-G-U".
+
+sections:
+  - name: FB 12 Informatik & Mathematik — Stellenportal
+    kind: jobs
+    tags: [cs, math, jobs]
+    seeds:
+      - https://www.fb12.uni-frankfurt.de/100453263/Stellenportal
+  - name: FB 12 — Promotion & Habilitation
+    kind: doctoral_school
+    tags: [cs, math]
+    seeds:
+      - https://www.fb12.uni-frankfurt.de/99575072/Promotion___Habilitation

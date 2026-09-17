@@ -1,0 +1,34 @@
+slug: stanford
+name: Stanford University
+country: US
+languages: [en]
+allowed_domains:
+  - stanford.edu              # lets profile pages lead to *.stanford.edu lab sites; depth and page caps keep it bounded
+max_pages: 300
+max_depth: 2
+min_delay_seconds: 3
+seeds_verified: "2026-09-17"
+notes: >
+  Faculty directory by research focus. Profile pages follow
+  https://www.cs.stanford.edu/people/<first-last>. www.stanford.edu robots.txt
+  (checked 2026-09-17) only disallows /search, /test/, /editor/ and similar tool paths;
+  cs.stanford.edu has its own robots.txt, which the crawler reads at run time.
+  Most US PhD funding is program-level (admission = funded), so expect profile pages
+  that say a professor is "looking for students" rather than job ads.
+
+sections:
+  - name: Computer Science — Artificial Intelligence faculty
+    kind: department
+    tags: [cs, ai, machine-learning]
+    seeds:
+      - https://www.cs.stanford.edu/people-cs/faculty-research/artificial-intelligence
+  - name: Computer Science — Robotics faculty
+    kind: department
+    tags: [cs, robotics]
+    seeds:
+      - https://www.cs.stanford.edu/people-cs/faculty-research/robotics
+  - name: Computer Science — all faculty
+    kind: department
+    tags: [cs]
+    seeds:
+      - https://www.cs.stanford.edu/people/faculty
