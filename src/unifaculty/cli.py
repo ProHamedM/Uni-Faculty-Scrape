@@ -200,8 +200,9 @@ def cmd_robots(args: argparse.Namespace) -> int:
 
 def cmd_doctor(args: argparse.Namespace) -> int:
     from unifaculty.llm.factory import DEFAULT_MODELS, KEY_ENV
+    from unifaculty.secretscan import is_git_tracked, looks_like_placeholder, scan_repo
 
-    load_dotenv()
+    from_dotenv = set(load_dotenv())
     ok = True
 
     def line(status: str, label: str, detail: str = "") -> None:
@@ -229,10 +230,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         line("ok", "settings", str(args.settings) if Path(args.settings).exists() else "built-in defaults")
         provider = settings.llm.provider
         envs = KEY_ENV.get(provider, ())
-        has_key = not envs or any(os.environ.get(e) for e in envs)
+        key_env = next((e for e in envs if os.environ.get(e)), None)
+        has_key = not envs or key_env is not None
         ok &= has_key
-        line("ok" if has_key else "FAIL", f"LLM {provider}", f"model {settings.llm.model or DEFAULT_MODELS[provider]}; "
-             + ("key present" if envs and has_key else ("no key needed" if not envs else f"set {' or '.join(envs)}")))
+        model = settings.llm.model or DEFAULT_MODELS[provider]
+        if not envs:
+            line("ok", f"LLM {provider}", f"model {model}; no key needed")
+        elif not key_env:
+            line("FAIL", f"LLM {provider}", f"model {model}; set {' or '.join(envs)} in .env")
+        else:
+            # Never print any part of the key — not even the last characters.
+            source = ".env" if key_env in from_dotenv else "environment variable"
+            line("ok", f"LLM {provider}", f"model {model}; {key_env} set via {source}")
+            if looks_like_placeholder(os.environ[key_env]):
+                line("warn", f"{key_env}", "looks like a placeholder, not a real key")
         unis = load_universities(Path(settings.universities_dir))
         line("ok", "universities", ", ".join(sorted(unis)))
     except ConfigError as exc:
@@ -243,7 +254,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         line("ok", "profile", f"{', '.join(profile.target_fields)} ({', '.join(profile.target_degree_levels)})")
     except ConfigError as exc:
         ok = False
-        line("FAIL", "profile", f"{exc}  (copy config/profile.example.yaml to config/profile.yaml)")
+        copy_cmd = ("Copy-Item config\\profile.example.yaml config\\profile.yaml" if os.name == "nt"
+                    else "cp config/profile.example.yaml config/profile.yaml")
+        line("FAIL", "profile", f"{exc}  (run: {copy_cmd})")
+    # --- secret hygiene -------------------------------------------------------------------------
+    repo = Path.cwd()
+    env_tracked = is_git_tracked(repo, ".env") if Path(".env").exists() else False
+    if env_tracked:
+        ok = False
+        line("FAIL", ".env is tracked by git", "run `git rm --cached .env`, commit, and REVOKE the key at the provider")
+    elif env_tracked is None and Path(".env").exists():
+        line("warn", ".env", "not inside a git repository — could not confirm it is ignored")
+    else:
+        line("ok", ".env not tracked by git" if Path(".env").exists() else "no .env file", "")
+    findings = scan_repo(repo) if (repo / ".git").exists() else []
+    if findings:
+        ok = False
+        for finding in findings[:10]:
+            line("FAIL", "possible secret in repo", f"{finding}  (revoke it, then remove it)")
+    elif (repo / ".git").exists():
+        line("ok", "no key-shaped strings in files git would commit")
     line("info", "politeness floor", f"{MIN_DELAY_FLOOR}s per host, robots.txt always enforced")
     for d in ("output", "runs", ".cache"):
         Path(d).mkdir(exist_ok=True)

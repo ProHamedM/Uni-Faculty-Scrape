@@ -12,6 +12,12 @@ config/settings.yaml
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+service-account*.json
+client_secret*.json
 
 # --- python ------------------------------------------------------------------
 __pycache__/

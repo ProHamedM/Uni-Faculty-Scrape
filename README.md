@@ -10,7 +10,7 @@ Built for students everywhere — especially those who can't afford to spend wee
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-Apache--2.0-green)
 
-> **Status: Phase 1 (v0.1.0).** Core crawler, compliance guardrails, LLM filter, CSV output and logging are implemented and covered by an offline test suite. Live validation on the three seed universities is the next step — see [Roadmap](#roadmap).
+> **Status: Phase 1 (v0.1.1).** Core crawler, compliance guardrails, LLM filter, CSV output and logging are implemented and covered by an offline test suite. Live validation on the three seed universities is the next step — see [Roadmap](#roadmap).
 
 ---
 
@@ -61,24 +61,81 @@ Why `curl_cffi` then? Many university CDNs reject non-browser TLS stacks even on
 
 ## Quick start
 
+### Windows (PowerShell)
+
+```powershell
+git clone https://github.com/ProHamedM/Uni-Faculty-Scrape.git
+cd Uni-Faculty-Scrape
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # prompt shows (.venv); cmd.exe: .venv\Scripts\activate.bat
+python -m pip install -e ".[dev]"
+
+Copy-Item config\profile.example.yaml config\profile.yaml   # then edit it: YOUR research interests
+Copy-Item .env.example .env                                 # then edit it: ONE LLM key (or use Ollama)
+notepad .env
+
+unifaculty doctor                                           # checks Python, modules, key, configs, secret hygiene
+unifaculty universities                                     # what's configured
+unifaculty run -u univie --llm mock --max-pages 20 -v       # dry run: real crawl, fake LLM, no key needed
+unifaculty run -u univie -v                                 # the real thing
+```
+
+If activation fails with *"running scripts is disabled on this system"*, allow local scripts for your user once, then activate again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+`Copy-Item` (or its alias `cp`) needs both a **source** and a **destination**: `cp config\profile.yaml` alone copies nothing.
+
+### macOS / Linux
+
 ```bash
 git clone https://github.com/ProHamedM/Uni-Faculty-Scrape.git
 cd Uni-Faculty-Scrape
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-
-cp config/profile.example.yaml config/profile.yaml       # describe YOUR research interests
-cp .env.example .env                                     # add ONE LLM key (or use Ollama)
-
-unifaculty doctor                                        # checks Python, modules, key, configs
-unifaculty universities                                  # what's configured
-unifaculty run -u univie --llm mock --max-pages 20 -v    # dry run: real crawl, fake LLM, no key needed
-unifaculty run -u univie -v                              # the real thing
+python3 -m venv .venv && source .venv/bin/activate
+python -m pip install -e ".[dev]"
+cp config/profile.example.yaml config/profile.yaml
+cp .env.example .env
+unifaculty doctor
+unifaculty run -u univie --llm mock --max-pages 20 -v
 ```
 
-Results land in `output/<university>/latest.csv`; everything that happened is in `runs/<run_id>/`.
+Results land in `output\<university>\latest.csv`; everything that happened is in `runs\<run_id>\`.
 
-### Choosing an LLM provider
+## Keeping your API key safe
+
+Your key is a password that spends your quota (or money). The repo is public, so one careless `git add .` publishes it.
+
+**Do**
+
+* Put the key **only** in `.env` in the project folder. It is git-ignored; confirm with `git check-ignore -v .env` (it should print the `.gitignore` line).
+* Or keep it out of files entirely for one session: `$env:GEMINI_API_KEY = "…"` (PowerShell) / `export GEMINI_API_KEY=…` (bash).
+* Run `unifaculty doctor` before committing: it fails if `.env` is tracked or a key-shaped string sits in any file git would commit.
+* Install the pre-commit hooks once, so gitleaks blocks a commit that contains a key:
+  ```powershell
+  python -m pip install pre-commit
+  pre-commit install
+  ```
+* Turn on GitHub **push protection** (repository *Settings → Code security*), so GitHub rejects a push that contains a known key format.
+* Limit the damage a leaked key can do: restrict a Gemini key to the Generative Language API in Google Cloud, and set a credit limit on OpenRouter keys.
+
+**Don't**
+
+* Paste keys into code, tests, `config/*.yaml` (the tool refuses to load a config containing one), notebooks, screenshots, issues or shared run logs.
+* Write "fake" keys that look real in tests — build them at runtime instead (see `tests/helpers.py`). Key-shaped placeholders trigger secret-scanning alerts and train people to paste keys into code.
+
+**If a real key was committed or pushed**
+
+1. **Revoke / regenerate it at the provider first** (Google AI Studio, OpenRouter, Anthropic console). Deleting the commit is not enough: forks, clones and caches keep it.
+2. Put the new key in `.env`, never in the repo.
+3. Optionally scrub history (`git filter-repo`) — only after revoking.
+4. Close the GitHub alert as revoked. For test data that was never a real key, close it with the reason for test data.
+
+The test suite contains `tests/test_no_secrets.py`, and CI runs gitleaks on every push and pull request.
+
+## Choosing an LLM provider
 
 | Provider | `--llm` | Key (`.env`) | Default model | Notes |
 |---|---|---|---|---|
@@ -89,7 +146,7 @@ Results land in `output/<university>/latest.csv`; everything that happened is in
 | Any OpenAI-compatible | `openai_compat` | `OPENAI_API_KEY` | set `llm.model` | Set `llm.base_url` too. |
 | Mock | `mock` | — | — | Offline dry run for testing the pipeline and logs. Not real filtering. |
 
-Model names change; override with `--model` or `llm.model` in `config/settings.yaml`. Please don't wire in unofficial "free API" wrappers that reuse someone's web-app session — they break the provider's terms, can get accounts banned, and leak session cookies to third-party code.
+Model names change; override with `--model` or `llm.model` in `config/settings.yaml` (copy it from `config\settings.example.yaml`). Keys never go in that file — see [Keeping your API key safe](#keeping-your-api-key-safe). Please don't wire in unofficial "free API" wrappers that reuse someone's web-app session — they break the provider's terms, can get accounts banned, and leak session cookies to third-party code.
 
 ## The CSV
 
@@ -131,14 +188,19 @@ runs/20260917T140512Z-univie-3f9a/
 | `--debug-dump` | Save raw HTML so you can see exactly what the parser saw |
 | `--no-cache` | Ignore cached LLM answers (cache lives in `.cache/llm/`) |
 
-Handy commands:
+Handy commands (PowerShell):
 
-```bash
-unifaculty summary runs/<run_id>                                   # totals, status codes, top reject reasons
-unifaculty robots https://informatik.univie.ac.at/ueber-uns/subeinheiten   # what robots.txt says, and why
-jq -r 'select(.level=="WARNING" or .level=="ERROR") | [.ts,.event,.url,.reason,.hint] | @tsv' runs/<id>/events.jsonl
-jq -r 'select(.event=="llm.classify.end") | [.keep,.field_score,.funding,.url] | @tsv' runs/<id>/events.jsonl
+```powershell
+$run = (Get-ChildItem runs | Sort-Object LastWriteTime | Select-Object -Last 1).FullName   # newest run
+unifaculty summary $run                                            # totals, status codes, top reject reasons
+unifaculty robots https://informatik.univie.ac.at/ueber-uns/subeinheiten    # what robots.txt says, and why
+
+$events = Get-Content "$run\events.jsonl" -Encoding UTF8 | ForEach-Object { $_ | ConvertFrom-Json }
+$events | Where-Object { $_.level -in 'WARNING','ERROR' } | Format-Table ts, event, url, reason, hint -Wrap
+$events | Where-Object event -eq 'llm.classify.end' | Format-Table keep, field_score, funding, url -AutoSize
 ```
+
+On macOS/Linux the same with `jq`: see [docs/LOGGING.md](docs/LOGGING.md).
 
 More in [docs/LOGGING.md](docs/LOGGING.md).
 
@@ -171,6 +233,7 @@ src/unifaculty/
   classify.py     prompt, JSON parsing, evidence verification, keep/drop rules, LLM call log, cache
   llm/            gemini · openai-compatible (OpenRouter, Ollama) · anthropic · mock
   logs.py         run folder, console/text/JSONL sinks, redaction
+  secretscan.py   finds key-shaped strings in the repo and configs (doctor, tests, config loading)
   tracing.py      nested timed spans, run statistics
 config/           settings, profile and university examples
 tests/            offline suite: fictional university, fake fetcher, mock LLM, mocked HTTP APIs
@@ -180,13 +243,14 @@ docs/             architecture and logging details
 
 ## Development
 
-```bash
-pip install -e ".[dev]"
+```powershell
+python -m pip install -e ".[dev]"
+pre-commit install        # gitleaks + ruff before every commit
 pytest                    # or: python -m unittest discover -s tests -t .
 ruff check src tests
 ```
 
-The whole suite runs offline in about a second: no network, no API keys.
+The whole suite runs offline in about a second: no network, no API keys. It includes a scan of the repository for committed secrets.
 
 ## Roadmap
 

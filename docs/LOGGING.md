@@ -57,33 +57,53 @@ Timed operations are spans: `university` → `robots.fetch` / `fetch` → `parse
 
 ## Recipes
 
-```bash
-RUN=runs/<run_id>
+### Windows (PowerShell)
+
+```powershell
+$run = (Get-ChildItem runs | Sort-Object LastWriteTime | Select-Object -Last 1).FullName   # newest run
+$events = Get-Content "$run\events.jsonl" -Encoding UTF8 | ForEach-Object { $_ | ConvertFrom-Json }
 
 # Everything that needs attention
-jq -r 'select(.level=="WARNING" or .level=="ERROR") | [.ts, .event, .url // .origin // "", .reason // .error // "", .hint // ""] | @tsv' $RUN/events.jsonl
+$events | Where-Object { $_.level -in 'WARNING','ERROR' } | Format-Table ts, event, url, origin, reason, error, hint -Wrap
 
 # Why was a specific page dropped?
-jq 'select(.url=="https://...") | {event, kind, classify, reason, keep, reasons, quotes_ok}' $RUN/events.jsonl
+$events | Where-Object url -eq 'https://...' | Format-List event, kind, classify, reason, keep, reasons, quotes_ok
 
 # Slowest fetches
-jq -r 'select(.event=="fetch.end") | [.elapsed_ms, .http_status, .url] | @tsv' $RUN/events.jsonl | sort -rn | head
+$events | Where-Object event -eq 'fetch.end' | Sort-Object elapsed_ms -Descending | Select-Object -First 10 elapsed_ms, http_status, url
 
 # Which robots.txt rules blocked what
-jq -r 'select(.event=="robots.disallowed") | [.rule // .reason, .url] | @tsv' $RUN/events.jsonl | sort | uniq -c | sort -rn
+$events | Where-Object event -eq 'robots.disallowed' | Group-Object rule | Sort-Object Count -Descending | Format-Table Count, Name
 
 # LLM decisions at a glance
-jq -r 'select(.event=="llm.classify.end") | [.keep, .field_score, .funding, .funding_conf, .cache, .url] | @tsv' $RUN/events.jsonl
+$events | Where-Object event -eq 'llm.classify.end' | Format-Table keep, field_score, funding, funding_conf, cache, url -AutoSize
+
+# Live tail of a running crawl (second terminal)
+Get-Content "$run\run.log" -Wait -Tail 20
 
 # Top reject reasons
+unifaculty summary $run
+```
+
+`Import-Csv "$run\rejected.csv" | Out-GridView` opens the dropped candidates in a sortable window.
+
+### macOS / Linux (jq)
+
+```bash
+RUN=$(ls -td runs/*/ | head -1)
+
+jq -r 'select(.level=="WARNING" or .level=="ERROR") | [.ts, .event, .url // .origin // "", .reason // .error // "", .hint // ""] | @tsv' $RUN/events.jsonl
+jq 'select(.url=="https://...") | {event, kind, classify, reason, keep, reasons, quotes_ok}' $RUN/events.jsonl
+jq -r 'select(.event=="fetch.end") | [.elapsed_ms, .http_status, .url] | @tsv' $RUN/events.jsonl | sort -rn | head
+jq -r 'select(.event=="robots.disallowed") | [.rule // .reason, .url] | @tsv' $RUN/events.jsonl | sort | uniq -c | sort -rn
+jq -r 'select(.event=="llm.classify.end") | [.keep, .field_score, .funding, .funding_conf, .cache, .url] | @tsv' $RUN/events.jsonl
+tail -f $RUN/run.log
 unifaculty summary $RUN
 ```
 
-Windows without `jq`: `python -c "import json,sys; [print(e['event'], e.get('url','')) for e in map(json.loads, open(sys.argv[1], encoding='utf-8')) if e['level'] in ('WARNING','ERROR')]" runs\<run_id>\events.jsonl`
-
 ## Secrets
 
-`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` values, and common key patterns (`AIza…`, `sk-or-v1-…`, `sk-ant-…`, `Bearer …`), are replaced with `<redacted>` in every sink, including `llm/` files. Keys are only ever sent in request headers.
+`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` values, and common key patterns (`AIza…`, `sk-or-v1-…`, `sk-ant-…`, `Bearer …`), are replaced with `<redacted>` in every sink, including `llm/` files. Keys are only ever sent in request headers. Redaction is a safety net: still review a run folder before attaching it to an issue, and never share `.env`.
 
 ## Filing a bug
 

@@ -10,15 +10,30 @@ Please read [ACCEPTABLE_USE.md](ACCEPTABLE_USE.md) first. Contributions that wea
 
 ## Development setup
 
-```bash
+Windows (PowerShell):
+
+```powershell
 git clone https://github.com/ProHamedM/Uni-Faculty-Scrape.git
 cd Uni-Faculty-Scrape
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+pre-commit install
 pytest
 ```
 
+macOS / Linux: the same, with `source .venv/bin/activate`.
+
 The test suite is fully offline: a fictional university (`tests/fixtures/site/`) served by a fake fetcher, a mock LLM, and mocked HTTP for the provider clients. Keep it that way — tests must never touch the network or need API keys.
+
+## Secrets: the one rule you can't break
+
+Never commit an API key — not a real one, and not a realistic-looking fake one.
+
+* Real keys live only in `.env` (git-ignored) or in a session environment variable.
+* In tests, build key-shaped values at runtime with `tests/helpers.py` (`fake_google_key()`, `fake_token()`); never type them as string literals.
+* `pre-commit install` adds gitleaks before each commit; `tests/test_no_secrets.py` and the CI gitleaks job catch anything that slips through.
+* If you ever push a real key: revoke it at the provider immediately, then tell a maintainer. Removing the commit does not un-leak it.
 
 ## Adding a university
 
@@ -56,11 +71,11 @@ The test suite is fully offline: a fictional university (`tests/fixtures/site/`)
          - https://jobs.example.edu/search?faculty=cs
    ```
 4. **Dry run and read the logs:**
-   ```bash
+   ```powershell
    unifaculty run -u example-uni --llm mock --max-pages 30 -vv --debug-dump
-   unifaculty summary runs/<run_id>
+   unifaculty summary runs\<run_id>
    ```
-   Check `robots.disallowed`, `skip.*` and `fetch.end` events; open `runs/<id>/pages/` to see what was parsed.
+   Check `robots.disallowed`, `skip.*` and `fetch.end` events; open `runs\<id>\pages\` to see what was parsed.
 5. **Real run with your own key**, then look at `rejected.csv` for positions that should have been kept.
 6. Open a PR with the YAML, the robots.txt notes, and the `summary.json` totals (no CSVs, no personal data).
 
@@ -69,6 +84,7 @@ The test suite is fully offline: a fictional university (`tests/fixtures/site/`)
 * Python ≥ 3.10, type hints, `ruff check src tests` clean, line length 120.
 * **Log it.** New behavior should emit structured events with `log_event(log, level, "area.event", key=value)` or run inside `span("name", log, ...)`. Use WARNING for anything a user needs to act on, and add a `hint=`.
 * Never log secrets. Keys go in headers, not URLs; `logs.redact()` is a safety net, not a license.
+* Paths: use `pathlib.Path`, open text files with an explicit `encoding=` — the tool must work the same on Windows, macOS and Linux (CI runs all three).
 * Keep compliance constants in `compliance.py`. Config may make the crawler slower or narrower, never faster or broader.
 * LLM output is untrusted. Anything that ends up in the CSV must be verifiable against the page (see `classify.verify`).
 * Prompt changes: add a new file `src/unifaculty/prompts/classify_vN.txt` and bump `PROMPT_VERSION` (it's part of the cache key).

@@ -225,6 +225,12 @@ def setup_logging(
     ctx_filter = ContextFilter()
 
     stream = console_stream or sys.stderr
+    if hasattr(stream, "reconfigure"):
+        # Windows consoles/redirects may use a legacy code page: never crash on a character, escape it.
+        try:
+            stream.reconfigure(errors="backslashreplace")
+        except (ValueError, OSError):  # pragma: no cover
+            pass
     console = logging.StreamHandler(stream)
     if quiet:
         console.setLevel(logging.WARNING)

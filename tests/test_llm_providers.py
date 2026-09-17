@@ -28,13 +28,13 @@ class GeminiTests(unittest.TestCase):
                 "candidates": [{"content": {"parts": [{"text": '{"ok": true}'}]}, "finishReason": "STOP"}],
                 "usageMetadata": {"promptTokenCount": 120, "candidatesTokenCount": 8}})
 
-        p = GeminiProvider(api_key="AIza-test-key", model="gemini-3.5-flash-lite", sleep=lambda s: None)
-        p.client = mock_client(handler, {"x-goog-api-key": "AIza-test-key"})
+        p = GeminiProvider(api_key="fake-gemini-key", model="gemini-3.5-flash-lite", sleep=lambda s: None)
+        p.client = mock_client(handler, {"x-goog-api-key": "fake-gemini-key"})
         result = p.complete_json("sys", "user")
         self.assertEqual(result.text, '{"ok": true}')
         self.assertEqual((result.input_tokens, result.output_tokens), (120, 8))
         self.assertNotIn("key=", seen["url"])                      # key never in the URL
-        self.assertEqual(seen["key"], "AIza-test-key")
+        self.assertEqual(seen["key"], "fake-gemini-key")
         self.assertEqual(seen["body"]["generationConfig"]["responseMimeType"], "application/json")
         self.assertTrue(seen["url"].endswith("/models/gemini-3.5-flash-lite:generateContent"))
 

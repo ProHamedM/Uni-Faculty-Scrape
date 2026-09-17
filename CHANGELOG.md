@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-09-17
+
+### Security
+- Removed the Google-API-key-shaped test literal that triggered a GitHub secret-scanning alert (it was never a real key). Tests now build key-shaped values at runtime (`tests/helpers.py`).
+- New `unifaculty.secretscan`: `tests/test_no_secrets.py` fails if a key-shaped string or a committed `.env` file is in the repository.
+- Config files containing a key-shaped value or a credential field are refused at load time.
+- `unifaculty doctor` checks that `.env` is not tracked, scans files git would commit, reports where the key came from (never any part of it), and warns about placeholder keys.
+- CI: gitleaks job on every push and pull request. Added `.pre-commit-config.yaml` (gitleaks, detect-private-key, ruff, repository secret scan).
+- README / SECURITY.md / CONTRIBUTING.md: how to keep keys safe and what to do after a leak.
+
+### Changed
+- Quick start and log recipes are Windows (PowerShell) first, with macOS/Linux equivalents.
+- `.env` and YAML files saved with a UTF-8 byte-order mark (Windows Notepad) now load correctly.
+- Console logging never crashes on characters a legacy Windows code page can't encode.
+- CI runs Windows first in the matrix.
+
 ## [0.1.0] — 2026-09-17
 
 ### Added

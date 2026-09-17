@@ -17,6 +17,21 @@ from unifaculty.fetcher import FetchResult  # noqa: E402
 FIXTURES = ROOT / "tests" / "fixtures"
 
 
+def fake_google_key() -> str:
+    """A Google-API-key-shaped value built at runtime.
+
+    Never write key-shaped literals in the repo — even fake ones trigger GitHub secret
+    scanning and teach contributors to paste keys into code. Assembling the value from
+    parts keeps scanners (and people) from mistaking it for a leak.
+    """
+    return "".join(["AI", "za", "Sy", "FAKE", "0" * 31])
+
+
+def fake_token(length: int = 32) -> str:
+    """A long, high-entropy-looking token built at runtime (for redaction tests)."""
+    return "".join(chr(ord("a") + (i * 7) % 26) for i in range(length))
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.now = 1000.0

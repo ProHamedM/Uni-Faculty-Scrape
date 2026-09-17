@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.helpers import ROOT  # noqa: F401
+from tests.helpers import fake_google_key, fake_token
 from unifaculty.logs import close_logging, get_logger, log_event, redact, setup_logging
 from unifaculty.models import CSV_COLUMNS, FacultyRecord
 from unifaculty.output import merge_records, safe_cell, write_records_csv
@@ -50,14 +50,17 @@ class LoggingTests(unittest.TestCase):
         os.environ.pop("GEMINI_API_KEY", None)
 
     def test_redaction_patterns(self):
-        os.environ["GEMINI_API_KEY"] = "my-secret-gemini-key-123"
-        text = redact("key=my-secret-gemini-key-123 auth: Bearer abcdefghijklmnopqrstuvwxyz sk-or-v1-" + "a" * 40)
-        self.assertNotIn("my-secret-gemini-key-123", text)
-        self.assertNotIn("abcdefghijklmnopqrstuvwxyz", text)
-        self.assertNotIn("a" * 40, text)
+        env_value = "gemini-" + fake_token(16)
+        bearer = fake_token(26)
+        openrouter = "sk-or-v1-" + "0a" * 32
+        os.environ["GEMINI_API_KEY"] = env_value
+        text = redact(f"key={env_value} auth: Bearer {bearer} {openrouter} {fake_google_key()}")
+        for secret in (env_value, bearer, openrouter, fake_google_key()):
+            self.assertNotIn(secret, text)
 
     def test_run_folder_jsonl_spans_and_redaction(self):
-        os.environ["GEMINI_API_KEY"] = "AIzaSyTESTTESTTESTTESTTESTTESTTEST12345"
+        key = fake_google_key()   # built at runtime: no key-shaped literal in the repo
+        os.environ["GEMINI_API_KEY"] = key
         with tempfile.TemporaryDirectory() as tmp:
             ctx = setup_logging(Path(tmp), "unit", verbosity=0, quiet=True, console_stream=io.StringIO())
             log = get_logger("test")
@@ -75,7 +78,7 @@ class LoggingTests(unittest.TestCase):
             self.assertEqual(inner["parent_span_id"], outer["span_id"])
             self.assertIn("elapsed_ms", outer)
             joined = (ctx.run_dir / "events.jsonl").read_text() + (ctx.run_dir / "run.log").read_text()
-            self.assertNotIn("AIzaSyTESTTESTTESTTESTTESTTESTTEST12345", joined)
+            self.assertNotIn(key, joined)
             self.assertIn("redacted", joined)
 
 

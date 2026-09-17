@@ -1,8 +1,8 @@
 # Your research profile. Copy to config/profile.yaml (git-ignored) and make it yours.
 # The LLM compares every candidate position against this, by meaning — not just keywords.
 
-current_degree: "M.Sc. Artificial Intelligence"
-background: "Machine Learning & Deep learning (quantization-aware training, knowledge distillation), Large Language Models & Transformers; Python/PyTorch/TensorFlow."
+current_degree: "M.Sc. Artificial Intelligence & Robotics"
+background: "Deep learning model compression (quantization-aware training, knowledge distillation); Python/PyTorch."
 
 target_degree_levels: [phd]          # any of: phd, master, postdoc
 

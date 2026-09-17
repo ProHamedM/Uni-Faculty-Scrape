@@ -132,37 +132,70 @@ class Settings(BaseModel):
 
 
 # --------------------------------------------------------------------------- loading
+_SECRET_KEY_NAMES = re.compile(r"(?:^|[_-])(?:api[_-]?key|apikey|secret|password|passwd|token|access[_-]?token)$", re.I)
+
+
+def _refuse_secrets(path: Path, text: str, data: dict) -> None:
+    """API keys belong in environment variables / .env (git-ignored), never in YAML that may be committed."""
+    from unifaculty.secretscan import scan_text
+
+    found = scan_text(text, str(path))
+    if found:
+        raise ConfigError(f"{found[0]} — an API key must not be stored in a config file. Remove it, revoke it at "
+                          "the provider if this file was ever committed or shared, and put the new key in .env.")
+
+    def walk(node, trail=""):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                here = f"{trail}.{key}" if trail else str(key)
+                if _SECRET_KEY_NAMES.search(str(key)) and value not in (None, ""):
+                    raise ConfigError(f"{path}: '{here}' looks like a credential. Config files only take settings; "
+                                      "put API keys in .env (see .env.example).")
+                walk(value, here)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item, trail)
+
+    walk(data)
+
+
 def _read_yaml(path: Path) -> dict:
     if not path.exists():
         raise ConfigError(f"config file not found: {path}")
+    # utf-8-sig: Windows editors (e.g. Notepad) may save a byte-order mark.
+    text = path.read_text(encoding="utf-8-sig")
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        data = yaml.safe_load(text) or {}
     except yaml.YAMLError as exc:
         raise ConfigError(f"invalid YAML in {path}: {exc}") from exc
     if not isinstance(data, dict):
         raise ConfigError(f"{path} must contain a mapping at the top level")
+    _refuse_secrets(path, text, data)
     return data
 
 
 def load_settings(path: Path | None) -> Settings:
     if path is None or not Path(path).exists():
         return Settings()
+    data = _read_yaml(Path(path))
     try:
-        return Settings.model_validate(_read_yaml(Path(path)))
+        return Settings.model_validate(data)
     except ValueError as exc:
         raise ConfigError(f"{path}: {exc}") from exc
 
 
 def load_profile(path: Path) -> ResearchProfile:
+    data = _read_yaml(Path(path))
     try:
-        return ResearchProfile.model_validate(_read_yaml(Path(path)))
+        return ResearchProfile.model_validate(data)
     except ValueError as exc:
         raise ConfigError(f"{path}: {exc}") from exc
 
 
 def load_university(path: Path) -> UniversityConfig:
+    data = _read_yaml(Path(path))
     try:
-        return UniversityConfig.model_validate(_read_yaml(Path(path)))
+        return UniversityConfig.model_validate(data)
     except ValueError as exc:
         raise ConfigError(f"{path}: {exc}") from exc
 
@@ -181,18 +214,21 @@ def load_universities(directory: Path) -> dict[str, UniversityConfig]:
 
 
 def load_dotenv(path: Path = Path(".env")) -> list[str]:
-    """Tiny .env loader (KEY=VALUE lines). Existing environment variables win."""
+    """Tiny .env loader (KEY=VALUE lines). Existing environment variables win.
+
+    Returns the names (never the values) of variables it set.
+    """
     loaded: list[str] = []
     if not path.exists():
         return loaded
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
+        if line.startswith("export "):
+            line = line[len("export "):]
         key, value = line.split("=", 1)
         key = key.strip()
-        if line.startswith("export "):
-            key = key[len("export "):].strip()
         value = value.strip().strip('"').strip("'")
         if re.fullmatch(r"[A-Z_][A-Z0-9_]*", key) and key not in os.environ:
             os.environ[key] = value

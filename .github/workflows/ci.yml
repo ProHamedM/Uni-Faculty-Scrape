@@ -9,12 +9,23 @@ permissions:
   contents: read
 
 jobs:
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # gitleaks-action needs history to scan each push / pull request's commits
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +37,7 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: Lint
         run: ruff check src tests
-      - name: Tests (offline)
+      - name: Tests (offline, includes repository secret scan)
         run: pytest -q
       - name: CLI smoke
         run: |
