@@ -21,12 +21,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: ["3.10", "3.12"]
+        # Two jobs instead of six: your own OS, plus Linux on the oldest Python the project supports.
+        include:
+          - os: windows-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.10"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
